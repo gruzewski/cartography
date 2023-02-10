@@ -27,6 +27,8 @@ class Config:
     :type aws_best_effort_mode: bool
     :param aws_best_effort_mode: If True, AWS sync will not raise any exceptions, just log. If False (default),
         exceptions will be raised.
+    :type aws_custom_endpoint: str
+    :param aws_custom_endpoint: Custom AWS Endpoint URL with schema. Optional.
     :type azure_sync_all_subscriptions: bool
     :param azure_sync_all_subscriptions: If True, Azure sync will run for all profiles in azureProfile.json. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
@@ -97,6 +99,7 @@ class Config:
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
+        aws_custom_endpoint=None,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
         azure_tenant_id=None,
@@ -139,6 +142,7 @@ class Config:
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
+        self.aws_custom_endpoint = aws_custom_endpoint
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions
         self.azure_sp_auth = azure_sp_auth
         self.azure_tenant_id = azure_tenant_id

@@ -33,8 +33,8 @@ def get_policy_name_from_arn(arn: str) -> str:
 
 
 @timeit
-def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
-    client = boto3_session.client('iam')
+def get_group_policies(boto3_session: boto3.session.Session, group_name: str, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_group_policies')
     policy_names: List[Dict] = []
     for page in paginator.paginate(GroupName=group_name):
@@ -44,15 +44,15 @@ def get_group_policies(boto3_session: boto3.session.Session, group_name: str) ->
 
 @timeit
 def get_group_policy_info(
-        boto3_session: boto3.session.Session, group_name: str, policy_name: str,
+        boto3_session: boto3.session.Session, group_name: str, policy_name: str, aws_endpoint: str,
 ) -> Any:
-    client = boto3_session.client('iam')
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
 
 
 @timeit
-def get_group_membership_data(boto3_session: boto3.session.Session, group_name: str) -> Dict:
-    client = boto3_session.client('iam')
+def get_group_membership_data(boto3_session: boto3.session.Session, group_name: str, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     try:
         memberships = client.get_group(GroupName=group_name)
         return memberships
@@ -63,8 +63,8 @@ def get_group_membership_data(boto3_session: boto3.session.Session, group_name: 
 
 
 @timeit
-def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for group in group_list:
         name = group["GroupName"]
@@ -75,8 +75,8 @@ def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List
 
 
 @timeit
-def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for group in group_list:
         name = group["GroupName"]
@@ -90,8 +90,8 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
 
 
 @timeit
-def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for user in user_list:
         name = user["UserName"]
@@ -107,8 +107,8 @@ def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[D
 
 
 @timeit
-def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for user in user_list:
         name = user["UserName"]
@@ -127,8 +127,8 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
 
 
 @timeit
-def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for role in role_list:
         name = role["RoleName"]
@@ -144,8 +144,8 @@ def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[D
 
 
 @timeit
-def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
+def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict], aws_endpoint: str) -> Dict:
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     policies = {}
     for role in role_list:
         name = role["RoleName"]
@@ -164,9 +164,9 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
 
 
 @timeit
-def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
-    role_list = get_role_list_data(boto3_session)['Roles']
-    resource_client = boto3_session.resource('iam')
+def get_role_tags(boto3_session: boto3.session.Session, aws_endpoint: str) -> List[Dict]:
+    role_list = get_role_list_data(boto3_session, aws_endpoint)['Roles']
+    resource_client = boto3_session.resource('iam', endpoint_url=aws_endpoint)
     role_tag_data: List[Dict] = []
     for role in role_list:
         name = role["RoleName"]
@@ -186,8 +186,8 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
 
 
 @timeit
-def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
+def get_user_list_data(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
 
     paginator = client.get_paginator('list_users')
     users: List[Dict] = []
@@ -197,8 +197,8 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
-def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
+def get_group_list_data(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_groups')
     groups: List[Dict] = []
     for page in paginator.paginate():
@@ -207,8 +207,8 @@ def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
-def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
+def get_role_list_data(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_roles')
     roles: List[Dict] = []
     for page in paginator.paginate():
@@ -217,8 +217,8 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
-def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
-    client = boto3_session.client('iam')
+def get_account_access_key_data(boto3_session: boto3.session.Session, username: str, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('iam', endpoint_url=aws_endpoint)
     # NOTE we can get away without using a paginator here because users are limited to two access keys
     access_keys: Dict = {}
     try:
@@ -641,10 +641,10 @@ def load_policy_data(
 @timeit
 def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    aws_update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
-    data = get_user_list_data(boto3_session)
+    data = get_user_list_data(boto3_session, aws_endpoint)
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
     sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
@@ -657,9 +657,9 @@ def sync_users(
 @timeit
 def sync_user_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    aws_update_tag: int, aws_endpoint: str,
 ) -> None:
-    managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
+    managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'], aws_endpoint)
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
 
@@ -667,9 +667,9 @@ def sync_user_managed_policies(
 @timeit
 def sync_user_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    aws_update_tag: int, aws_endpoint: str,
 ) -> None:
-    policy_data = get_user_policy_data(boto3_session, data['Users'])
+    policy_data = get_user_policy_data(boto3_session, data['Users'], aws_endpoint)
     transform_policy_data(policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
 
@@ -677,33 +677,33 @@ def sync_user_inline_policies(
 @timeit
 def sync_groups(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    aws_update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
-    data = get_group_list_data(boto3_session)
+    data = get_group_list_data(boto3_session, aws_endpoint)
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
-    sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag, aws_endpoint)
 
-    sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag, aws_endpoint)
 
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_group_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    aws_update_tag: int, aws_endpoint: str
 ) -> None:
-    managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
+    managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"], aws_endpoint)
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
 
 
 def sync_groups_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    aws_update_tag: int, aws_endpoint: str,
 ) -> None:
-    policy_data = get_group_policy_data(boto3_session, data["Groups"])
+    policy_data = get_group_policy_data(boto3_session, data["Groups"], aws_endpoint)
     transform_policy_data(policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
 
@@ -711,35 +711,35 @@ def sync_groups_inline_policies(
 @timeit
 def sync_roles(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    aws_update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
-    data = get_role_list_data(boto3_session)
+    data = get_role_list_data(boto3_session, aws_endpoint)
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
-    sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+    sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag, aws_endpoint)
 
-    sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+    sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag, aws_endpoint)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
+    neo4j_session: neo4j.Session, aws_update_tag: int, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
-    managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
+    managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles", aws_endpoint])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
 
 
 def sync_role_inline_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
+    neo4j_session: neo4j.Session, aws_update_tag: int, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
-    inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
+    inline_policy_data = get_role_policy_data(boto3_session, data["Roles"], aws_endpoint)
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
 
@@ -747,13 +747,13 @@ def sync_role_inline_policies(
 @timeit
 def sync_group_memberships(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
-    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
     query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
+    groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"], aws_endpoint) for group in groups}
     load_group_memberships(neo4j_session, groups_membership, aws_update_tag)
     run_cleanup_job(
         'aws_import_groups_membership_cleanup.json',
@@ -765,13 +765,13 @@ def sync_group_memberships(
 @timeit
 def sync_user_access_keys(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
-    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
     query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
             "RETURN user.name as name, user.arn as arn"
     for user in neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id):
-        access_keys = get_account_access_key_data(boto3_session, user["name"])
+        access_keys = get_account_access_key_data(boto3_session, user["name"], aws_endpoint)
         if access_keys:
             account_access_keys = {user["arn"]: access_keys}
             load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag)
@@ -785,17 +785,17 @@ def sync_user_access_keys(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, aws_endpoint: str
 ) -> None:
     logger.info("Syncing IAM for account '%s'.", current_aws_account_id)
     # This module only syncs IAM information that is in use.
     # As such only policies that are attached to a user, role or group are synced
-    sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
+    sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
+    sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
+    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
+    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
+    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,

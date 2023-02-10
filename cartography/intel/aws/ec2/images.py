@@ -38,8 +38,8 @@ def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_acc
 
 @timeit
 @aws_handle_regions
-def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str]) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str], aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     images = []
     try:
         self_images = client.describe_images(Owners=['self'])['Images']
@@ -111,11 +111,11 @@ def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict) ->
 @timeit
 def sync_ec2_images(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
-        data = get_images(boto3_session, region, images_in_use)
+        data = get_images(boto3_session, region, images_in_use, aws_endpoint)
         load_images(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)

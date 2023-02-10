@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+def get_volumes(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_volumes')
     volumes: List[Dict] = []
     for page in paginator.paginate():
@@ -107,11 +107,11 @@ def cleanup_volumes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 @timeit
 def sync_ebs_volumes(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.debug("Syncing volumes for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_volumes(boto3_session, region)
+        data = get_volumes(boto3_session, region, aws_endpoint)
         transformed_data = transform_volumes(data, region, current_aws_account_id)
         load_volumes(neo4j_session, transformed_data, region, current_aws_account_id, update_tag)
         load_volume_relationships(neo4j_session, transformed_data, update_tag)

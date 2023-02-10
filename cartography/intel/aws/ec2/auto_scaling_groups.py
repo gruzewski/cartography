@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
+def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs: List[Dict] = []
     for page in paginator.paginate():
@@ -26,8 +26,8 @@ def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: st
 
 @timeit
 @aws_handle_regions
-def get_launch_configurations(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
+def get_launch_configurations(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_launch_configurations')
     lcs: List[Dict] = []
     for page in paginator.paginate():
@@ -231,13 +231,13 @@ def cleanup_ec2_launch_configurations(neo4j_session: neo4j.Session, common_job_p
 @timeit
 def sync_ec2_auto_scaling_groups(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.debug("Syncing auto scaling groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        lc_data = get_launch_configurations(boto3_session, region)
+        lc_data = get_launch_configurations(boto3_session, region, aws_endpoint)
         load_launch_configurations(neo4j_session, lc_data, region, current_aws_account_id, update_tag)
-        data = get_ec2_auto_scaling_groups(boto3_session, region)
+        data = get_ec2_auto_scaling_groups(boto3_session, region, aws_endpoint)
         load_ec2_auto_scaling_groups(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_auto_scaling_groups(neo4j_session, common_job_parameters)
     cleanup_ec2_launch_configurations(neo4j_session, common_job_parameters)

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def _build_aws_sync_kwargs(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    sync_tag: int, common_job_parameters: Dict[str, Any],
+    sync_tag: int, common_job_parameters: Dict[str, Any], aws_endpoint: str,
 ) -> Dict[str, Any]:
     return {
         'neo4j_session': neo4j_session,
@@ -36,6 +36,7 @@ def _build_aws_sync_kwargs(
         'current_aws_account_id': current_aws_account_id,
         'update_tag': sync_tag,
         'common_job_parameters': common_job_parameters,
+        'aws_endpoint': aws_endpoint,
     }
 
 
@@ -45,14 +46,15 @@ def _sync_one_account(
     current_aws_account_id: str,
     update_tag: int,
     common_job_parameters: Dict[str, Any],
+    aws_endpoint: str,
     regions: List[str] = [],
     aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
 ) -> None:
     if not regions:
-        regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+        regions = _autodiscover_account_regions(boto3_session, current_aws_account_id, aws_endpoint)
 
     sync_args = _build_aws_sync_kwargs(
-        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters, aws_endpoint
     )
 
     for func_name in aws_requested_syncs:
@@ -95,10 +97,10 @@ def _sync_one_account(
     )
 
 
-def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str) -> List[str]:
+def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_id: str, aws_endpoint: str) -> List[str]:
     regions: List[str] = []
     try:
-        regions = ec2.get_ec2_regions(boto3_session)
+        regions = ec2.get_ec2_regions(boto3_session, aws_endpoint)
     except botocore.exceptions.ClientError as e:
         logger.debug("Error occurred getting EC2 regions.", exc_info=True)
         logger.error(
@@ -114,12 +116,12 @@ def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_
 
 def _autodiscover_accounts(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, account_id: str,
-    sync_tag: int, common_job_parameters: Dict,
+    sync_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
-        client = boto3_session.client('organizations')
+        client = boto3_session.client('organizations', endpoint_url=aws_endpoint)
         paginator = client.get_paginator('list_accounts')
         accounts: List[Dict] = []
         for page in paginator.paginate():
@@ -142,6 +144,7 @@ def _sync_multiple_accounts(
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
     aws_best_effort_mode: bool,
+    aws_endpoint: str,
     aws_requested_syncs: List[str] = [],
 ) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
@@ -161,7 +164,7 @@ def _sync_multiple_accounts(
         else:
             boto3_session = boto3.Session(profile_name=profile_name)
 
-        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
+        _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters, aws_endpoint)
 
         try:
             _sync_one_account(
@@ -171,6 +174,7 @@ def _sync_multiple_accounts(
                 sync_tag,
                 common_job_parameters,
                 aws_requested_syncs=aws_requested_syncs,  # Could be replaced later with per-account requested syncs
+                aws_endpoint=aws_endpoint,
             )
         except Exception as e:
             if aws_best_effort_mode:
@@ -226,7 +230,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.aws_sync_all_profiles:
         aws_accounts = organizations.get_aws_accounts_from_botocore_config(boto3_session)
     else:
-        aws_accounts = organizations.get_aws_account_default(boto3_session)
+        aws_accounts = organizations.get_aws_account_default(boto3_session, config.aws_custom_endpoint)
 
     if not aws_accounts:
         logger.warning(
@@ -252,6 +256,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         config.update_tag,
         common_job_parameters,
         config.aws_best_effort_mode,
+        config.aws_custom_endpoint,
         requested_syncs,
     )
 

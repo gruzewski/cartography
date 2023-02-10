@@ -205,6 +205,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-custom-endpoint',
+            type=str,
+            default=None,
+            help=(
+                'Custom endpoint url for all API calls. Example: "http://localhost:8888/".'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',

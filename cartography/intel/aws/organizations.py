@@ -15,18 +15,18 @@ def get_account_from_arn(arn: str) -> str:
     return arn.split(":")[4]
 
 
-def get_caller_identity(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('sts')
+def get_caller_identity(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
+    client = boto3_session.client('sts', endpoint_url=aws_endpoint)
     return client.get_caller_identity()
 
 
-def get_current_aws_account_id(boto3_session: boto3.session.Session) -> Dict:
-    return get_caller_identity(boto3_session)['Account']
+def get_current_aws_account_id(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
+    return get_caller_identity(boto3_session, aws_endpoint)['Account']
 
 
-def get_aws_account_default(boto3_session: boto3.session.Session) -> Dict:
+def get_aws_account_default(boto3_session: boto3.session.Session, aws_endpoint: str) -> Dict:
     try:
-        return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}
+        return {boto3_session.profile_name: get_current_aws_account_id(boto3_session, aws_endpoint)}
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred getting default AWS account number.", exc_info=True)
         logger.error(

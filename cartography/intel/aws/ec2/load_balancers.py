@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('elb', region_name=region, config=get_botocore_config())
+def get_loadbalancer_data(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('elb', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_load_balancers')
     elbs: List[Dict] = []
     for page in paginator.paginate():
@@ -181,10 +181,10 @@ def cleanup_load_balancers(neo4j_session: neo4j.Session, common_job_parameters: 
 @timeit
 def sync_load_balancers(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 load balancers for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_data(boto3_session, region)
+        data = get_loadbalancer_data(boto3_session, region, aws_endpoint)
         load_load_balancers(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_load_balancers(neo4j_session, common_job_parameters)

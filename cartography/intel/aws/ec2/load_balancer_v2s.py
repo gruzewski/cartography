@@ -44,8 +44,8 @@ def get_load_balancer_v2_target_groups(client: botocore.client.BaseClient, load_
 
 @timeit
 @aws_handle_regions
-def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config())
+def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('elbv2', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_load_balancers')
     elbv2s: List[Dict] = []
     for page in paginator.paginate():
@@ -218,10 +218,10 @@ def cleanup_load_balancer_v2s(neo4j_session: neo4j.Session, common_job_parameter
 @timeit
 def sync_load_balancer_v2s(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, aws_endpoint: str
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_v2_data(boto3_session, region)
+        data = get_loadbalancer_v2_data(boto3_session, region, aws_endpoint)
         load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)

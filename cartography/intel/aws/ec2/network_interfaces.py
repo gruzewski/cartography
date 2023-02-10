@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_network_interface_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+def get_network_interface_data(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     paginator = client.get_paginator('describe_network_interfaces')
     subnets: List[Dict] = []
     for page in paginator.paginate():
@@ -270,10 +270,10 @@ def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_paramete
 @timeit
 def sync_network_interfaces(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_network_interface_data(boto3_session, region)
+        data = get_network_interface_data(boto3_session, region, aws_endpoint)
         load(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)

@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(), endpoint_url=aws_endpoint)
     try:
         addresses = client.describe_addresses()['Addresses']
     except ClientError as e:
@@ -91,10 +91,10 @@ def cleanup_elastic_ip_addresses(neo4j_session: neo4j.Session, common_job_parame
 @timeit
 def sync_elastic_ip_addresses(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-    current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+    current_aws_account_id: str, update_tag: int, common_job_parameters: Dict, aws_endpoint: str,
 ) -> None:
     for region in regions:
         logger.info(f"Syncing Elastic IP Addresses for region {region} in account {current_aws_account_id}.")
-        addresses = get_elastic_ip_addresses(boto3_session, region)
+        addresses = get_elastic_ip_addresses(boto3_session, region, aws_endpoint)
         load_elastic_ip_addresses(neo4j_session, addresses, region, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)

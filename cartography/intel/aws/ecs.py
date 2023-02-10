@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_ecs_cluster_arns(boto3_session: boto3.session.Session, region: str) -> List[str]:
-    client = boto3_session.client('ecs', region_name=region)
+def get_ecs_cluster_arns(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[str]:
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_clusters')
     cluster_arns: List[str] = []
     for page in paginator.paginate():
@@ -32,8 +32,9 @@ def get_ecs_clusters(
     boto3_session: boto3.session.Session,
     region: str,
     cluster_arns: List[str],
+    aws_endpoint: str,
 ) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     # TODO: also include attachment info, and make relationships between the attachements
     # and the cluster.
     includes = ['SETTINGS', 'CONFIGURATIONS']
@@ -51,8 +52,9 @@ def get_ecs_container_instances(
     cluster_arn: str,
     boto3_session: boto3.session.Session,
     region: str,
+    aws_endpoint: str,
 ) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_container_instances')
     container_instances: List[Dict[str, Any]] = []
     container_instance_arns: List[str] = []
@@ -72,8 +74,8 @@ def get_ecs_container_instances(
 
 @timeit
 @aws_handle_regions
-def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict[str, Any]]:
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_services')
     services: List[Dict[str, Any]] = []
     service_arns: List[str] = []
@@ -91,8 +93,8 @@ def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, reg
 
 @timeit
 @aws_handle_regions
-def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict[str, Any]]:
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_task_definitions')
     task_definitions: List[Dict[str, Any]] = []
     task_definition_arns: List[str] = []
@@ -108,8 +110,8 @@ def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) 
 
 @timeit
 @aws_handle_regions
-def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region: str, aws_endpoint: str) -> List[Dict[str, Any]]:
+    client = boto3_session.client('ecs', region_name=region, endpoint_url=aws_endpoint)
     paginator = client.get_paginator('list_tasks')
     tasks: List[Dict[str, Any]] = []
     task_arns: List[str] = []
@@ -542,12 +544,12 @@ def cleanup_ecs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict, aws_endpoint: str
 ) -> None:
     for region in regions:
         logger.info("Syncing ECS for region '%s' in account '%s'.", region, current_aws_account_id)
-        cluster_arns = get_ecs_cluster_arns(boto3_session, region)
-        clusters = get_ecs_clusters(boto3_session, region, cluster_arns)
+        cluster_arns = get_ecs_cluster_arns(boto3_session, region, aws_endpoint)
+        clusters = get_ecs_clusters(boto3_session, region, cluster_arns, aws_endpoint)
         if len(clusters) == 0:
             continue
         load_ecs_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
@@ -556,6 +558,7 @@ def sync(
                 cluster_arn,
                 boto3_session,
                 region,
+                aws_endpoint,
             )
             load_ecs_container_instances(
                 neo4j_session,
@@ -568,6 +571,7 @@ def sync(
             task_definitions = get_ecs_task_definitions(
                 boto3_session,
                 region,
+                aws_endpoint,
             )
             load_ecs_task_definitions(
                 neo4j_session,
@@ -580,6 +584,7 @@ def sync(
                 cluster_arn,
                 boto3_session,
                 region,
+                aws_endpoint,
             )
             load_ecs_services(
                 neo4j_session,
@@ -593,6 +598,7 @@ def sync(
                 cluster_arn,
                 boto3_session,
                 region,
+                aws_endpoint,
             )
             load_ecs_tasks(
                 neo4j_session,
